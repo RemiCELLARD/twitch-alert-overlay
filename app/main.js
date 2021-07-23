@@ -1,9 +1,25 @@
-async function fetchUserId(login, clientid) {
+async function fetchOAuthToken(clientId, clientSecret) {
+  try {
+    let response = await fetch(
+      `https://id.twitch.tv/oauth2/token?client_id=${clientId}&client_secret=${clientSecret}&grant_type=client_credentials`,
+      {method: 'POST'}
+    );
+    if(response.ok){
+      let json = await response.json();
+      return json['access_token'];
+    }
+    return null;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function fetchUserId(login, clientId, OAuthToken) {
   try {
     const response = await fetch(
       `https://api.twitch.tv/helix/users?login=${login}`,
       {
-        headers: { "Client-ID": clientid },
+        headers: { "Client-ID": clientId, "Authorization": `Bearer ${OAuthToken}`}
       }
     );
     const json = await response.json();
@@ -13,12 +29,12 @@ async function fetchUserId(login, clientid) {
   }
 }
 
-async function fetchFollowerIds(userId, clientId) {
+async function fetchFollowerIds(userId, clientId, OAuthToken) {
   try {
     const response = await fetch(
       `https://api.twitch.tv/helix/users/follows?to_id=${userId}&first=100`,
       {
-        headers: { "Client-ID": clientId },
+        headers: { "Client-ID": clientId, "Authorization": `Bearer ${OAuthToken}`}
       }
     );
     const json = await response.json();
@@ -28,13 +44,13 @@ async function fetchFollowerIds(userId, clientId) {
   }
 }
 
-async function fetchFollowerDetails(followerIds, clientid) {
+async function fetchFollowerDetails(followerIds, clientId, OAuthToken) {
   try {
     const followersString = followerIds.map((id) => `id=${id}`).join("&");
     const response = await fetch(
       `https://api.twitch.tv/helix/users?${followersString}`,
       {
-        headers: { "Client-ID": clientid },
+        headers: { "Client-ID": clientId, "Authorization": `Bearer ${OAuthToken}`}
       }
     );
     const json = await response.json();
@@ -46,10 +62,8 @@ async function fetchFollowerDetails(followerIds, clientid) {
 
 function configureSound(name, volume) {
   const sound = document.getElementById("alert-sound");
-
   sound.src = `sounds/${name}.wav`;
   sound.volume = volume / 100;
-
   return sound;
 }
 
@@ -68,33 +82,37 @@ function buildAlert(detail) {
 }
 
 async function startOverlay() {
-  try {
+  try {    
     const params = new URLSearchParams(location.search);
     const login = params.get("login") || "joekombo";
     const sound = params.get("sound") || "guitar";
     const volume = Number(params.get("volume") || "50");
     const clientId = params.get("clientid");
+    const clientSecret = params.get("clientsecret");
     const gif = params.get("gif") || "guitarkitty";
     const soundClip = configureSound(sound, volume);
-
-    const userId = await fetchUserId(login, clientId);
-    const initialFollowerIds = await fetchFollowerIds(userId, clientId);
-
-    if (!clientId) {
+    
+    if (!clientId || !clientSecret) {
       document.body.innerHTML = `
-        <div class='instructions'>
-          <h1>MISSING CLIENT ID</h1>
-          <p>Go to <a href="https://github.com/joekombo/twitch-alert-overlay">
-          https://github.com/joekombo/twitch-alert-overlay</a> for detailed instructions.</p>
+      <div class='instructions'>
+      <h1>MISSING CLIENT ID / CLIENT SECRET</h1>
+      <p>Go to <a href="https://github.com/joekombo/twitch-alert-overlay">
+      https://github.com/joekombo/twitch-alert-overlay</a> for detailed instructions.</p>
         </div>
-      `;
+        `;
       return;
     }
 
+    /* Init variables */
+    const OAuthToken = await fetchOAuthToken(clientId, clientSecret);
+    const userId = await fetchUserId(login, clientId, OAuthToken);
+    const initialFollowerIds = await fetchFollowerIds(userId, clientId, OAuthToken);
+     
+    /* Initial list of followers */
     let knownFollowersIds = initialFollowerIds;
 
     setInterval(async () => {
-      const followerIds = await fetchFollowerIds(userId, clientId);
+      const followerIds = await fetchFollowerIds(userId, clientId, OAuthToken);
       let newFollowersIds = [];
 
       followerIds.forEach((id) => {
@@ -105,10 +123,7 @@ async function startOverlay() {
       });
 
       if (newFollowersIds.length) {
-        const followerDetails = await fetchFollowerDetails(
-          newFollowersIds,
-          clientId
-        );
+        const followerDetails = await fetchFollowerDetails(newFollowersIds, clientId, OAuthToken);
 
         let remainingDetails = followerDetails;
 

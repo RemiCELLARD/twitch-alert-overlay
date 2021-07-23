@@ -4,8 +4,6 @@
 
 A simple follower alert overlay for OBS that displays a list of the latest followers approximately every 60 seconds.
 
-_Note: This project uses the `docs/` folder for web related files: `.html`, `.css`, `.js` etc. I do this because the project is hosted on [github pages](https://pages.github.com/)._
-
 ## Parameters
 
 ### `login`
@@ -28,9 +26,13 @@ Default `guitarkitty`. Positioned in the bottom left of screen. Must match a fil
 
 Required. [Create an application at dev.twitch.tv](https://dev.twitch.tv) and use that client id for `clientid`.
 
+### `clientsecret`
+
+Required. [Create an application at dev.twitch.tv](https://dev.twitch.tv) and use that client id for `clientsecret`.
+
 ## Example
 
-`https://joekombo.github.io/twitch-alert-overlay/?login=joekombo&clientid=[your client id]`
+`https://joekombo.github.io/twitch-alert-overlay/?login=joekombo&clientid=[your client id]&clientsecret=[your client secret]`
 
 ## Testing notifications are working using another streamer name
 Use another streamer's login name to test that notifcations are working. Example: `login=summit1g`
@@ -39,7 +41,7 @@ _Note: Be patient.  The notifications may take up to 60 seconds to show for the 
 
 ## Application Settings
 
-I use the following application settings at [dev.twitch.tv](https://dev.twitch.tv) to obtain my Client ID. The Client ID can be found near the bottom.
+I use the following application settings at [dev.twitch.tv](https://dev.twitch.tv) to obtain my Client ID and Secret. The Client ID and Secret can be found near the bottom.
 
 ![screenshot of dev.twitch.tv settings](twitch-app-settings.png)
 
@@ -63,7 +65,7 @@ Go to web browser and view the page.
 
 Example URL:
 
-`http://localhost:5000/?login=joekombo&clientid=[your client id]`
+`http://localhost:5000/?login=joekombo&clientid=[your client id]&clientsecret=[your client secret]`
 
 _Note: Some browsers require permission to play sound. Click the tab and select allow audio/video._
 
